@@ -36,11 +36,11 @@ func (di *DateIndex) IsDirty() bool {
 }
 
 func (di *DateIndex) Size() int {
-	return int(di.root.Size)
+	return int(di.root.Size())
 }
 
 func (di *DateIndex) Add(date uint64, offset int64, count uint32) {
-	di.root.AddItem(date, NewNode(date, offset, count))
+	di.root.Add(date, NewNode(date, offset, count))
 }
 
 func (di *DateIndex) Contains(date uint64) bool {
@@ -51,22 +51,24 @@ func (di *DateIndex) Next(date uint64) *Node {
 	if !di.root.Contains(date) {
 		return nil
 	}
-	next := di.root.Next(di.root.Find(date))
-	if next == nil {
+	next, found := di.root.Next(date)
+	if !found {
 		return nil
 	}
-	return next.GetValue()
+	node, _ := di.root.Get(next)
+	return node
 }
 
 func (di *DateIndex) Prev(date uint64) *Node {
 	if !di.root.Contains(date) {
 		return nil
 	}
-	prev := di.root.Prev(di.root.Find(date))
-	if prev == nil {
+	prev, found := di.root.Prev(date)
+	if !found {
 		return nil
 	}
-	return prev.GetValue()
+	node, _ := di.root.Get(prev)
+	return node
 }
 
 // SymbolIndex implementation
@@ -84,7 +86,7 @@ func NewSymbolIndex[T storage.FileStoreItem](adapter storage.DataAdapter[T]) *Sy
 }
 
 func (si *SymbolIndex[T]) Size() uint32 {
-	return si.root.Size
+	return si.root.Size()
 }
 
 func (si *SymbolIndex[T]) Contains(symbol string) bool {
@@ -93,9 +95,9 @@ func (si *SymbolIndex[T]) Contains(symbol string) bool {
 
 func (si *SymbolIndex[T]) Add(symbol string, node *Node) {
 	if !si.Contains(symbol) {
-		si.root.AddItem(symbol, NewDateIndex())
+		si.root.Add(symbol, NewDateIndex())
 	}
-	idx := si.root.Find(symbol).GetValue()
+	idx, _ := si.root.Get(symbol)
 	idx.Add(node.GetDate(), node.GetOffset(), node.GetCount())
 	idx.SetDirty()
 }
@@ -104,7 +106,7 @@ func (si *SymbolIndex[T]) SetDirty(symbol string) {
 	if !si.Contains(symbol) {
 		return
 	}
-	idx := si.root.Find(symbol).GetValue()
+	idx, _ := si.root.Get(symbol)
 	idx.SetDirty()
 }
 
@@ -112,7 +114,7 @@ func (si *SymbolIndex[T]) IsDirty(symbol string) bool {
 	if !si.Contains(symbol) {
 		return false
 	}
-	idx := si.root.Find(symbol).GetValue()
+	idx, _ := si.root.Get(symbol)
 	return idx.IsDirty()
 }
 
@@ -138,83 +140,127 @@ func (si *SymbolIndex[T]) Load(symbol string) {
 		if node == nil {
 			return
 		}
-		dateindex.root.AddItem(node.date, node)
+		dateindex.root.Add(node.date, node)
 	}
 
-	si.root.AddItem(symbol, dateindex)
+	si.root.Add(symbol, dateindex)
 }
 
 func (si *SymbolIndex[T]) Persist() {
-	idx := si.root.Min()
-	for idx != nil {
-		if idx.GetValue().IsDirty() {
-			dateindex := idx.GetValue()
-			filepath := si.adapter.GetIndexFilePath(idx.GetKey())
+	symbol, hasSymbolIndex := si.root.Min()
+	for hasSymbolIndex {
+		dateindex, _ := si.root.Get(symbol)
+		if dateindex.IsDirty() {
+			filepath := si.adapter.GetIndexFilePath(symbol)
 			file, err := os.OpenFile(filepath, os.O_CREATE|os.O_RDWR, 0644)
 			if file == nil || err != nil {
-				fmt.Printf("Couldn't write symbol index file for %s, aborting\n", idx.GetKey())
+				fmt.Printf("Couldn't write symbol index file for %s, aborting\n", symbol)
 				return
 			}
 
 			for _, date := range dateindex.root.GetKeys(gotrees.TreeWalkBFS) {
-				datenode := dateindex.root.Find(date).GetValue()
+				datenode, _ := dateindex.root.Get(date)
 				if datenode.GetCount() > 0 {
 					_, _ = file.WriteString(fmt.Sprintf("%s\n", datenode.ToCsv()))
 				}
 			}
 
-			idx.GetValue().SetClean()
+			dateindex.SetClean()
 			_ = file.Close()
 		}
 
-		idx = si.root.Next(idx)
+		symbol, hasSymbolIndex = si.root.Next(symbol)
 	}
 }
 
 func (si *SymbolIndex[T]) Lookup(symbol string, date uint64) *Node {
 	si.Load(symbol)
-	idx := si.root.Find(symbol)
-	if idx == nil || !idx.GetValue().root.Contains(date) {
+	
+	sindex, hasSymbol := si.root.Get(symbol)
+	if !hasSymbol {
 		return nil
 	}
 
-	return idx.GetValue().root.Find(date).GetValue()
+	dindex, hasDate := sindex.root.Get(date)
+	if !hasDate {
+		return nil
+	}
+
+	return dindex
 }
 
 func (si *SymbolIndex[T]) First(symbol string) *Node {
 	si.Load(symbol)
-	idx := si.root.Find(symbol)
-	if idx == nil || idx.GetValue().root.Size == 0 {
+
+	sindex, hasSymbol := si.root.Get(symbol)
+	if !hasSymbol {
 		return nil
 	}
 
-	return idx.GetValue().root.Min().GetValue()
+	minKey, hasMin := sindex.root.Min()
+	if !hasMin {
+		return nil
+	}
+
+	dindex, hasDate := sindex.root.Get(minKey)
+	if !hasDate {
+		return nil
+	}
+
+	return dindex
 }
 
 func (si *SymbolIndex[T]) Last(symbol string) *Node {
 	si.Load(symbol)
-	idx := si.root.Find(symbol)
-	if idx == nil || idx.GetValue().root.Size == 0 {
+
+	sindex, hasSymbol := si.root.Get(symbol)
+	if !hasSymbol {
 		return nil
 	}
 
-	return idx.GetValue().root.Max().GetValue()
+	maxKey, hasMax := sindex.root.Max()
+	if !hasMax {
+		return nil
+	}
+
+	dindex, hasDate := sindex.root.Get(maxKey)
+	if !hasDate {
+		return nil
+	}
+
+	return dindex
 }
 
 func (si *SymbolIndex[T]) Prev(symbol string, date uint64) *Node {
 	si.Load(symbol)
-	idx := si.root.Find(symbol)
-	if idx == nil || !idx.GetValue().root.Contains(date) {
+
+	sindex, hasSymbol := si.root.Get(symbol)
+	if !hasSymbol {
 		return nil
 	}
-	return idx.GetValue().Prev(date)
+
+	prevKey, hasPrev := sindex.root.Prev(date)
+	if !hasPrev {
+		return nil
+	}
+
+	prevNode, _ := sindex.root.Get(prevKey)
+	return prevNode
 }
 
 func (si *SymbolIndex[T]) Next(symbol string, date uint64) *Node {
 	si.Load(symbol)
-	idx := si.root.Find(symbol)
-	if idx == nil || !idx.GetValue().root.Contains(date) {
+
+	sindex, hasSymbol := si.root.Get(symbol)
+	if !hasSymbol {
 		return nil
 	}
-	return idx.GetValue().Next(date)
+
+	nextKey, hasNext := sindex.root.Next(date)
+	if !hasNext {
+		return nil
+	}
+
+	nextNode, _ := sindex.root.Get(nextKey)
+	return nextNode
 }
