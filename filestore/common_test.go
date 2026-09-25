@@ -19,18 +19,18 @@ type SimpleFileStoreItem struct {
 	price float64
 }
 
-func (s SimpleFileStoreItem) Id() uint64 {
+func (s SimpleFileStoreItem) GetId() uint64 {
 	return s.id
 }
 
-func (s SimpleFileStoreItem) Date() uint64 {
+func (s SimpleFileStoreItem) GetDate() uint64 {
 	return s.date
 }
 
 func (s SimpleFileStoreItem) CompareTo(other storage.FileStoreItem) int {
-	if s.id < other.Id() {
+	if s.id < other.GetId() {
 		return -1
-	} else if s.id > other.Id() {
+	} else if s.id > other.GetId() {
 		return 1
 	}
 	return 0

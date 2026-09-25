@@ -166,7 +166,7 @@ func (fs *FileStore[T]) CheckIntegrity(symbol string) error {
 
 	lastId := uint64(0)
 	numPrices := uint32(0)
-	date := (*item).Date()
+	date := (*item).GetDate()
 
 	var err error = nil
 
@@ -177,24 +177,24 @@ func (fs *FileStore[T]) CheckIntegrity(symbol string) error {
 			break
 		}
 
-		if (*item).Date() != date {
+		if (*item).GetDate() != date {
 			if numPrices != indexNode.GetCount() {
 				err = errors.New(fmt.Sprintf("Index count mismatch for date %d", date))
 				break
 			}
-			date = (*item).Date()
+			date = (*item).GetDate()
 			indexNode = fs.index.Lookup(symbol, date)
 			numPrices = 1
 		} else {
 			numPrices++
 		}
 
-		if (*item).Id() <= lastId {
+		if (*item).GetId() <= lastId {
 			err = errors.New(fmt.Sprintf("Non-increasing ID detected for date %d", date))
 			break
 		}
 
-		lastId = (*item).Id()
+		lastId = (*item).GetId()
 		item = fs.adapter.Read(*file, symbol)
 	}
 

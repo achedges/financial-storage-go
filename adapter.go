@@ -5,8 +5,8 @@ import (
 )
 
 type FileStoreItem interface {
-	Date() uint64
-	Id() uint64
+	GetDate() uint64
+	GetId() uint64
 	CompareTo(other FileStoreItem) int
 }
 
