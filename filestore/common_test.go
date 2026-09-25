@@ -56,7 +56,7 @@ func NewSimpleFileStoreItemAdapter[T SimpleFileStoreItem](rootPath string, dataP
 	}
 
 	// id is not persisted
-	adapter.recordSizeBytes = 64 + 32 + 64
+	adapter.recordSizeBytes = 8 + 4 + 8
 	adapter.buffer = make([]byte, adapter.recordSizeBytes)
 	return &adapter
 }
@@ -86,9 +86,9 @@ func (s *SimpleFileStoreItemAdapter[T]) Buffer() []byte {
 }
 
 func (s *SimpleFileStoreItemAdapter[T]) FillBuffer(item *SimpleFileStoreItem) {
-	binary.LittleEndian.PutUint64(s.buffer[0:64], item.date)
-	binary.LittleEndian.PutUint32(s.buffer[64:96], item.time)
-	binary.LittleEndian.PutUint64(s.buffer[96:], math.Float64bits(item.price))
+	binary.LittleEndian.PutUint64(s.buffer, item.date)
+	binary.LittleEndian.PutUint32(s.buffer[8:], item.time)
+	binary.LittleEndian.PutUint64(s.buffer[12:], math.Float64bits(item.price))
 }
 
 func (s *SimpleFileStoreItemAdapter[T]) Read(file os.File, _ string) *SimpleFileStoreItem {
@@ -98,9 +98,9 @@ func (s *SimpleFileStoreItemAdapter[T]) Read(file os.File, _ string) *SimpleFile
 	}
 
 	item := SimpleFileStoreItem{
-		date:  binary.LittleEndian.Uint64(s.buffer[0:64]),
-		time:  binary.LittleEndian.Uint32(s.buffer[64:96]),
-		price: math.Float64frombits(binary.LittleEndian.Uint64(s.buffer[96:])),
+		date:  binary.LittleEndian.Uint64(s.buffer),
+		time:  binary.LittleEndian.Uint32(s.buffer[8:]),
+		price: math.Float64frombits(binary.LittleEndian.Uint64(s.buffer[12:])),
 	}
 	item.id = item.GenerateId()
 	return &item

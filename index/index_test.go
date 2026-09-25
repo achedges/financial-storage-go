@@ -64,13 +64,13 @@ func TestDateIndex_Next(t *testing.T) {
 
 func TestSymbolIndex_NewSymbolIndex(t *testing.T) {
 	adapter := TestAdapter[TestFileStoreItem]{}
-	idx := index.NewSymbolIndex[TestFileStoreItem](&adapter)
+	idx := index.NewSymbolIndex(&adapter)
 	assertions.EqualUints(0, idx.Size(), t)
 }
 
 func TestSymbolIndex_Add(t *testing.T) {
 	adapter := TestAdapter[storage.FileStoreItem]{}
-	idx := index.NewSymbolIndex[storage.FileStoreItem](&adapter)
+	idx := index.NewSymbolIndex(&adapter)
 	idx.Add("TEST", index.NewNode(20260101, 0, 100))
 	assertions.True(idx.Contains("TEST"), t)
 	assertions.True(idx.Lookup("TEST", 20260101) != nil, t)
@@ -79,7 +79,7 @@ func TestSymbolIndex_Add(t *testing.T) {
 
 func TestSymbolIndex_Load(t *testing.T) {
 	adapter := TestAdapter[storage.FileStoreItem]{}
-	idx := index.NewSymbolIndex[storage.FileStoreItem](&adapter)
+	idx := index.NewSymbolIndex(&adapter)
 	idx.Load("TEST_LOAD")
 	assertions.EqualUints(1, idx.Size(), t)
 	assertions.True(idx.Contains("TEST_LOAD"), t)
@@ -113,7 +113,7 @@ func TestSymbolIndex_Persist(t *testing.T) {
 	// delete the test file (if it exists)
 	_ = os.Remove(adapter.GetIndexFilePath("TEST_PERSIST"))
 
-	idx := index.NewSymbolIndex[storage.FileStoreItem](&adapter)
+	idx := index.NewSymbolIndex(&adapter)
 	idx.Load("TEST_PERSIST")
 
 	idx.Add("TEST_PERSIST", index.NewNode(20260101, 0, 100))
@@ -162,7 +162,7 @@ func TestSymbolIndex_First_Last(t *testing.T) {
 
 func TestSymbolIndex_Prev_Next(t *testing.T) {
 	adapter := TestAdapter[storage.FileStoreItem]{}
-	idx := index.NewSymbolIndex[storage.FileStoreItem](&adapter)
+	idx := index.NewSymbolIndex(&adapter)
 	idx.Load("TEST_LOAD")
 
 	prevnode := idx.Prev("TEST_LOAD", 20260102)

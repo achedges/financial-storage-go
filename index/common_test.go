@@ -13,19 +13,19 @@ type TestFileStoreItem struct {
 }
 
 func (t TestFileStoreItem) CompareTo(other storage.FileStoreItem) int {
-	if t.id < other.Id() {
+	if t.id < other.GetId() {
 		return -1
-	} else if t.id > other.Id() {
+	} else if t.id > other.GetId() {
 		return 1
 	}
 	return 0
 }
 
-func (t TestFileStoreItem) Date() uint64 {
+func (t TestFileStoreItem) GetDate() uint64 {
 	return t.date
 }
 
-func (t TestFileStoreItem) Id() uint64 {
+func (t TestFileStoreItem) GetId() uint64 {
 	return t.id
 }
 
@@ -49,7 +49,7 @@ func (a *TestAdapter[T]) GetIndexFilePath(symbol string) string {
 	return fmt.Sprintf("%s/%s.csv", a.GetIndexPath(), symbol)
 }
 
-func (a *TestAdapter[T]) GetRecordSizeBytes(n uint32) uint32 {
+func (a *TestAdapter[T]) GetRecordSizeBytes(_ uint32) uint32 {
 	return 0
 }
 
@@ -57,10 +57,10 @@ func (a *TestAdapter[T]) Buffer() []byte {
 	return nil
 }
 
-func (a *TestAdapter[T]) FillBuffer(item *T) {
+func (a *TestAdapter[T]) FillBuffer(_ *T) {
 	return
 }
 
-func (a *TestAdapter[T]) Read(file os.File, symbol string) *T {
+func (a *TestAdapter[T]) Read(_ os.File, _ string) *T {
 	return &(a.item)
 }
