@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/achedges/financial-storage-go/filestore"
+	filestore "github.com/achedges/financial-storage-go"
 	"github.com/achedges/go-assertions"
 )
 

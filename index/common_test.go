@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/achedges/financial-storage-go"
+	"github.com/achedges/financial-storage-core-go/adapter"
 )
 
 type TestFileStoreItem struct {
@@ -12,7 +12,7 @@ type TestFileStoreItem struct {
 	id   uint64
 }
 
-func (t TestFileStoreItem) CompareTo(other storage.FileStoreItem) int {
+func (t TestFileStoreItem) CompareTo(other adapter.FileStoreItem) int {
 	if t.id < other.GetId() {
 		return -1
 	} else if t.id > other.GetId() {
@@ -29,7 +29,7 @@ func (t TestFileStoreItem) GetId() uint64 {
 	return t.id
 }
 
-type TestAdapter[T storage.FileStoreItem] struct {
+type TestAdapter[T adapter.FileStoreItem] struct {
 	item T
 }
 

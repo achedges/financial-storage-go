@@ -7,7 +7,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/achedges/financial-storage-go"
+	"github.com/achedges/financial-storage-core-go/adapter"
 )
 
 // test item implementation
@@ -27,7 +27,7 @@ func (s SimpleFileStoreItem) GetDate() uint64 {
 	return s.date
 }
 
-func (s SimpleFileStoreItem) CompareTo(other storage.FileStoreItem) int {
+func (s SimpleFileStoreItem) CompareTo(other adapter.FileStoreItem) int {
 	if s.id < other.GetId() {
 		return -1
 	} else if s.id > other.GetId() {
@@ -49,16 +49,16 @@ type SimpleFileStoreItemAdapter[T SimpleFileStoreItem] struct {
 }
 
 func NewSimpleFileStoreItemAdapter[T SimpleFileStoreItem](rootPath string, dataPath string, indexPath string) *SimpleFileStoreItemAdapter[T] {
-	adapter := SimpleFileStoreItemAdapter[T]{
+	a := SimpleFileStoreItemAdapter[T]{
 		rootPath:  rootPath,
 		dataPath:  dataPath,
 		indexPath: indexPath,
 	}
 
 	// id is not persisted
-	adapter.recordSizeBytes = 8 + 4 + 8
-	adapter.buffer = make([]byte, adapter.recordSizeBytes)
-	return &adapter
+	a.recordSizeBytes = 8 + 4 + 8
+	a.buffer = make([]byte, a.recordSizeBytes)
+	return &a
 }
 
 func (s *SimpleFileStoreItemAdapter[T]) GetDataPath() string {

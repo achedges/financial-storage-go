@@ -6,16 +6,16 @@ import (
 	"os"
 	"slices"
 
-	"github.com/achedges/financial-storage-go"
+	"github.com/achedges/financial-storage-core-go/adapter"
 	"github.com/achedges/financial-storage-go/index"
 )
 
-type FileStore[T storage.FileStoreItem] struct {
-	adapter storage.DataAdapter[T]
+type FileStore[T adapter.FileStoreItem] struct {
+	adapter adapter.DataAdapter[T]
 	index   *index.SymbolIndex[T]
 }
 
-func NewFileStore[T storage.FileStoreItem](adapter storage.DataAdapter[T]) *FileStore[T] {
+func NewFileStore[T adapter.FileStoreItem](adapter adapter.DataAdapter[T]) *FileStore[T] {
 	return &FileStore[T]{
 		adapter: adapter,
 		index:   index.NewSymbolIndex[T](adapter),

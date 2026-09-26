@@ -1,8 +1,12 @@
 github.com/achedges/financial-core-go v1.0.0 h1:czQ6l1PDUFpGDmaUe58QOvom1mwjqmPCChMpYSxNkhE=
 github.com/achedges/financial-core-go v1.0.0/go.mod h1:Qmx30pua7xc5uJ+cO/lRuGX51An8GkF8V7IU+qy/yVo=
+github.com/achedges/financial-storage-core-go v1.0.0 h1:Fde464w9jUhDradwho2/oi9MxyWRjzkckTaiC8ZVPQo=
+github.com/achedges/financial-storage-core-go v1.0.0/go.mod h1:/Rb3nyTXp7YtF/p08VRTrbTemymMbgAfS1Q93aezk4U=
 github.com/achedges/go-assertions v1.0.7 h1:XjuXSKBBLzqSCMaLi5mW9WURRvrs8FRqHErgFniApM4=
 github.com/achedges/go-assertions v1.0.7/go.mod h1:RvWERfkWjpnf4z3Z3UTb9gsTwSo4nBitDRpm1tDl4/k=
 github.com/achedges/gotrees v1.0.3 h1:skFr/QJspR3eNdup+Jzo2R5KF2RBA+/0IWlVcSICBIA=
 github.com/achedges/gotrees v1.0.3/go.mod h1:+4G3UeXHhkdPlmGtNMj+P3SnTzuE/TuCfXgk9Jupvfo=
 github.com/achedges/gotrees v1.1.0 h1:kqfDXiE3ROVzr/dzbEq94JVfoA5jkL2NPp53ZrbPjZU=
 github.com/achedges/gotrees v1.1.0/go.mod h1:lykNnsIFUBFlLjXce2kmweNjFZlVG9b8yrBAJUP+NNU=
+github.com/achedges/gotrees v1.2.0 h1:gCGsHcMNht3FYDVVXGw90EOZYhqnmjhNCPqC4DJywy0=
+github.com/achedges/gotrees v1.2.0/go.mod h1:lykNnsIFUBFlLjXce2kmweNjFZlVG9b8yrBAJUP+NNU=

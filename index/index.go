@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/achedges/financial-storage-go"
+	"github.com/achedges/financial-storage-core-go/adapter"
 	"github.com/achedges/gotrees"
 )
 
@@ -73,12 +73,12 @@ func (di *DateIndex) Prev(date uint64) *Node {
 
 // SymbolIndex implementation
 
-type SymbolIndex[T storage.FileStoreItem] struct {
+type SymbolIndex[T adapter.FileStoreItem] struct {
 	root    *gotrees.TreeMap[string, *DateIndex]
-	adapter storage.DataAdapter[T]
+	adapter adapter.DataAdapter[T]
 }
 
-func NewSymbolIndex[T storage.FileStoreItem](adapter storage.DataAdapter[T]) *SymbolIndex[T] {
+func NewSymbolIndex[T adapter.FileStoreItem](adapter adapter.DataAdapter[T]) *SymbolIndex[T] {
 	return &SymbolIndex[T]{
 		root:    gotrees.NewTreeMap[string, *DateIndex](),
 		adapter: adapter,
@@ -175,7 +175,7 @@ func (si *SymbolIndex[T]) Persist() {
 
 func (si *SymbolIndex[T]) Lookup(symbol string, date uint64) *Node {
 	si.Load(symbol)
-	
+
 	sindex, hasSymbol := si.root.Get(symbol)
 	if !hasSymbol {
 		return nil
