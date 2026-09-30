@@ -12,13 +12,13 @@ import (
 
 type FileStore[T adapter.FileStoreItem] struct {
 	adapter adapter.DataAdapter[T]
-	index   *index.SymbolIndex[T]
+	Index   *index.SymbolIndex[T]
 }
 
 func NewFileStore[T adapter.FileStoreItem](adapter adapter.DataAdapter[T]) *FileStore[T] {
 	return &FileStore[T]{
 		adapter: adapter,
-		index:   index.NewSymbolIndex[T](adapter),
+		Index:   index.NewSymbolIndex[T](adapter),
 	}
 }
 
@@ -38,7 +38,7 @@ func (fs *FileStore[T]) writeBytes(file os.File, items []T, offset int64) {
 
 func (fs *FileStore[T]) writeNewItems(symbol string, date uint64, items []T, file os.File) {
 	newNode := index.NewNode(date, 0, uint32(len(items)))
-	lastNode := fs.index.Last(symbol)
+	lastNode := fs.Index.Last(symbol)
 
 	if lastNode != nil {
 		if newNode.IsAfter(lastNode) {
@@ -51,7 +51,7 @@ func (fs *FileStore[T]) writeNewItems(symbol string, date uint64, items []T, fil
 			for shiftNode != nil && newNode.IsBefore(shiftNode) {
 				fs.shiftBytes(file, shiftNode.GetOffset(), shiftNode.GetCount(), deltaBytes)
 				shiftNode.UpdateOffset(deltaBytes)
-				shiftNode = fs.index.Prev(symbol, shiftNode.GetDate())
+				shiftNode = fs.Index.Prev(symbol, shiftNode.GetDate())
 			}
 
 			if shiftNode != nil {
@@ -60,7 +60,7 @@ func (fs *FileStore[T]) writeNewItems(symbol string, date uint64, items []T, fil
 		}
 	}
 
-	fs.index.Add(symbol, newNode) // calls SetDirty()
+	fs.Index.Add(symbol, newNode) // calls SetDirty()
 	fs.writeBytes(file, items, newNode.GetOffset())
 }
 
@@ -68,29 +68,29 @@ func (fs *FileStore[T]) writeExistingItems(symbol string, updateNode *index.Node
 	numItems := uint32(len(items))
 	if updateNode.GetCount() < numItems {
 		// new buffer has more data, need to expand the file
-		shiftNode := fs.index.Last(symbol)
+		shiftNode := fs.Index.Last(symbol)
 		deltaBytes := int64(fs.adapter.GetRecordSizeBytes(numItems - updateNode.GetCount()))
 
 		for shiftNode != nil && shiftNode.IsAfter(updateNode) {
 			fs.shiftBytes(file, shiftNode.GetOffset(), shiftNode.GetCount(), deltaBytes)
 			shiftNode.UpdateOffset(deltaBytes)
-			shiftNode = fs.index.Prev(symbol, shiftNode.GetDate())
+			shiftNode = fs.Index.Prev(symbol, shiftNode.GetDate())
 		}
 
 		updateNode.SetCount(numItems)
 	} else if updateNode.GetCount() > numItems {
 		// new buffer has less data, need to compact the file
-		shiftNode := fs.index.Next(symbol, updateNode.GetDate())
+		shiftNode := fs.Index.Next(symbol, updateNode.GetDate())
 		deltaBytes := int64(fs.adapter.GetRecordSizeBytes(updateNode.GetCount()-numItems)) * -1
 
 		for shiftNode != nil {
 			fs.shiftBytes(file, shiftNode.GetOffset(), shiftNode.GetCount(), deltaBytes)
 			shiftNode.UpdateOffset(deltaBytes)
-			shiftNode = fs.index.Next(symbol, shiftNode.GetDate())
+			shiftNode = fs.Index.Next(symbol, shiftNode.GetDate())
 		}
 
 		// trim file
-		lastNode := fs.index.Last(symbol)
+		lastNode := fs.Index.Last(symbol)
 		if lastNode != nil {
 			_ = file.Truncate(lastNode.GetOffset() + int64(fs.adapter.GetRecordSizeBytes(lastNode.GetCount())))
 		}
@@ -98,17 +98,17 @@ func (fs *FileStore[T]) writeExistingItems(symbol string, updateNode *index.Node
 		updateNode.SetCount(numItems)
 	}
 
-	fs.index.SetDirty(symbol)
+	fs.Index.SetDirty(symbol)
 	fs.writeBytes(file, items, updateNode.GetOffset())
 }
 
 func (fs *FileStore[T]) Write(symbol string, date uint64, items []T) {
-	fs.index.Load(symbol)
+	fs.Index.Load(symbol)
 
 	// sort the items first
 	slices.SortFunc(items, func(a, b T) int { return a.CompareTo(b) })
 	fileName := fs.adapter.GetDataFilePath(symbol)
-	writeNode := fs.index.Lookup(symbol, date)
+	writeNode := fs.Index.Lookup(symbol, date)
 
 	file, e := os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, 0644)
 	if e != nil {
@@ -121,15 +121,15 @@ func (fs *FileStore[T]) Write(symbol string, date uint64, items []T) {
 	}
 	_ = file.Close()
 
-	fs.index.SetDirty(symbol)
-	fs.index.Persist()
+	fs.Index.SetDirty(symbol)
+	fs.Index.Persist()
 }
 
 func (fs *FileStore[T]) Read(symbol string, fromDate uint64, throughDate uint64) []*T {
-	fs.index.Load(symbol)
+	fs.Index.Load(symbol)
 	items := make([]*T, 0)
 
-	datenode := fs.index.Lookup(symbol, fromDate)
+	datenode := fs.Index.Lookup(symbol, fromDate)
 	if datenode == nil {
 		return items
 	}
@@ -145,7 +145,7 @@ func (fs *FileStore[T]) Read(symbol string, fromDate uint64, throughDate uint64)
 			}
 		}
 
-		datenode = fs.index.Next(symbol, datenode.GetDate())
+		datenode = fs.Index.Next(symbol, datenode.GetDate())
 		if datenode == nil {
 			break
 		}
@@ -170,7 +170,7 @@ func (fs *FileStore[T]) CheckIntegrity(symbol string) error {
 
 	var err error = nil
 
-	indexNode := fs.index.Lookup(symbol, date)
+	indexNode := fs.Index.Lookup(symbol, date)
 	for item != nil {
 		if indexNode == nil {
 			err = errors.New(fmt.Sprintf("Unable to resolve index node for date %d", date))
@@ -183,7 +183,7 @@ func (fs *FileStore[T]) CheckIntegrity(symbol string) error {
 				break
 			}
 			date = (*item).GetDate()
-			indexNode = fs.index.Lookup(symbol, date)
+			indexNode = fs.Index.Lookup(symbol, date)
 			numPrices = 1
 		} else {
 			numPrices++
