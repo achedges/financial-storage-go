@@ -61,6 +61,6 @@ func (a *TestAdapter[T]) FillBuffer(_ *T) {
 	return
 }
 
-func (a *TestAdapter[T]) Read(_ os.File, _ string) *T {
-	return &(a.item)
+func (a *TestAdapter[T]) Read(_ os.File, _ string) (T, bool) {
+	return a.item, true
 }

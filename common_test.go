@@ -91,10 +91,10 @@ func (s *SimpleFileStoreItemAdapter[T]) FillBuffer(item *SimpleFileStoreItem) {
 	binary.LittleEndian.PutUint64(s.buffer[12:], math.Float64bits(item.price))
 }
 
-func (s *SimpleFileStoreItemAdapter[T]) Read(file os.File, _ string) *SimpleFileStoreItem {
+func (s *SimpleFileStoreItemAdapter[T]) Read(file os.File, _ string) (SimpleFileStoreItem, bool) {
 	bytesRead, _ := file.Read(s.buffer)
 	if uint32(bytesRead) < s.GetRecordSizeBytes(1) {
-		return nil
+		return SimpleFileStoreItem{}, false
 	}
 
 	item := SimpleFileStoreItem{
@@ -103,5 +103,5 @@ func (s *SimpleFileStoreItemAdapter[T]) Read(file os.File, _ string) *SimpleFile
 		price: math.Float64frombits(binary.LittleEndian.Uint64(s.buffer[12:])),
 	}
 	item.id = item.GenerateId()
-	return &item
+	return item, true
 }

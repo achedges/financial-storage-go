@@ -45,7 +45,7 @@ func (fs *FileStore[T]) writeNewItems(symbol string, date uint64, items []T, fil
 			// append to the end of the file
 			newNode.UpdateOffset(int64(fs.adapter.GetRecordSizeBytes(lastNode.GetCount())))
 		} else {
-			//shift newer records and insert into the file
+			// shift newer records and insert into the file
 			deltaBytes := int64(fs.adapter.GetRecordSizeBytes(newNode.GetCount()))
 			shiftNode := lastNode
 			for shiftNode != nil && newNode.IsBefore(shiftNode) {
@@ -125,9 +125,9 @@ func (fs *FileStore[T]) Write(symbol string, date uint64, items []T) {
 	fs.Index.Persist()
 }
 
-func (fs *FileStore[T]) Read(symbol string, fromDate uint64, throughDate uint64) []*T {
+func (fs *FileStore[T]) Read(symbol string, fromDate uint64, throughDate uint64) []T {
 	fs.Index.Load(symbol)
-	items := make([]*T, 0)
+	items := make([]T, 0)
 
 	datenode := fs.Index.Lookup(symbol, fromDate)
 	if datenode == nil {
@@ -139,8 +139,7 @@ func (fs *FileStore[T]) Read(symbol string, fromDate uint64, throughDate uint64)
 	for datenode.GetDate() <= throughDate {
 		_, _ = file.Seek(datenode.GetOffset(), 0)
 		for range datenode.GetCount() {
-			item := fs.adapter.Read(*file, symbol)
-			if item != nil {
+			if item, ok := fs.adapter.Read(*file, symbol); ok {
 				items = append(items, item)
 			}
 		}
@@ -161,41 +160,41 @@ func (fs *FileStore[T]) CheckIntegrity(symbol string) error {
 	file, _ := os.OpenFile(filename, os.O_RDONLY, 0)
 
 	// read first record then rewind
-	item := fs.adapter.Read(*file, symbol)
-	//_, _ = file.Seek(0, 0)
+	item, itemReadOk := fs.adapter.Read(*file, symbol)
+	// _, _ = file.Seek(0, 0)
 
 	lastId := uint64(0)
 	numPrices := uint32(0)
-	date := (*item).GetDate()
+	date := item.GetDate()
 
 	var err error = nil
 
 	indexNode := fs.Index.Lookup(symbol, date)
-	for item != nil {
+	for itemReadOk {
 		if indexNode == nil {
 			err = errors.New(fmt.Sprintf("Unable to resolve index node for date %d", date))
 			break
 		}
 
-		if (*item).GetDate() != date {
+		if item.GetDate() != date {
 			if numPrices != indexNode.GetCount() {
 				err = errors.New(fmt.Sprintf("Index count mismatch for date %d", date))
 				break
 			}
-			date = (*item).GetDate()
+			date = item.GetDate()
 			indexNode = fs.Index.Lookup(symbol, date)
 			numPrices = 1
 		} else {
 			numPrices++
 		}
 
-		if (*item).GetId() <= lastId {
+		if item.GetId() <= lastId {
 			err = errors.New(fmt.Sprintf("Non-increasing ID detected for date %d", date))
 			break
 		}
 
-		lastId = (*item).GetId()
-		item = fs.adapter.Read(*file, symbol)
+		lastId = item.GetId()
+		item, itemReadOk = fs.adapter.Read(*file, symbol)
 	}
 
 	// one more check on count
