@@ -22,13 +22,13 @@ func NewFileStore[T adapter.FileStoreItem](adapter adapter.DataAdapter[T]) *File
 	}
 }
 
-func (fs *FileStore[T]) shiftBytes(file os.File, offset int64, count uint32, deltabytes int64) {
+func (fs *FileStore[T]) shiftBytes(file *os.File, offset int64, count uint32, deltabytes int64) {
 	localBuffer := make([]byte, fs.adapter.GetRecordSizeBytes(count))
 	_, _ = file.ReadAt(localBuffer, offset)
 	_, _ = file.WriteAt(localBuffer, offset+deltabytes)
 }
 
-func (fs *FileStore[T]) writeBytes(file os.File, items []T, offset int64) {
+func (fs *FileStore[T]) writeBytes(file *os.File, items []T, offset int64) {
 	_, _ = file.Seek(offset, 0)
 	for _, item := range items {
 		fs.adapter.FillBuffer(&item)
@@ -36,7 +36,7 @@ func (fs *FileStore[T]) writeBytes(file os.File, items []T, offset int64) {
 	}
 }
 
-func (fs *FileStore[T]) writeNewItems(symbol string, date uint64, items []T, file os.File) {
+func (fs *FileStore[T]) writeNewItems(symbol string, date uint64, items []T, file *os.File) {
 	newNode := index.NewNode(date, 0, uint32(len(items)))
 	lastNode := fs.Index.Last(symbol)
 
@@ -64,7 +64,7 @@ func (fs *FileStore[T]) writeNewItems(symbol string, date uint64, items []T, fil
 	fs.writeBytes(file, items, newNode.GetOffset())
 }
 
-func (fs *FileStore[T]) writeExistingItems(symbol string, updateNode *index.Node, items []T, file os.File) {
+func (fs *FileStore[T]) writeExistingItems(symbol string, updateNode *index.Node, items []T, file *os.File) {
 	numItems := uint32(len(items))
 	if updateNode.GetCount() < numItems {
 		// new buffer has more data, need to expand the file
@@ -115,9 +115,9 @@ func (fs *FileStore[T]) Write(symbol string, date uint64, items []T) {
 		panic(e)
 	}
 	if writeNode == nil {
-		fs.writeNewItems(symbol, date, items, *file)
+		fs.writeNewItems(symbol, date, items, file)
 	} else {
-		fs.writeExistingItems(symbol, writeNode, items, *file)
+		fs.writeExistingItems(symbol, writeNode, items, file)
 	}
 	_ = file.Close()
 
