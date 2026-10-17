@@ -43,7 +43,7 @@ func (fs *FileStore[T]) writeNewItems(symbol string, date uint64, items []T, fil
 	if lastNode != nil {
 		if newNode.IsAfter(lastNode) {
 			// append to the end of the file
-			newNode.UpdateOffset(int64(fs.adapter.GetRecordSizeBytes(lastNode.GetCount())))
+			newNode.UpdateOffset(lastNode.GetOffset() + int64(fs.adapter.GetRecordSizeBytes(lastNode.GetCount())))
 		} else {
 			// shift newer records and insert into the file
 			deltaBytes := int64(fs.adapter.GetRecordSizeBytes(newNode.GetCount()))
