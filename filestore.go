@@ -29,10 +29,14 @@ func (fs *FileStore[T]) shiftBytes(file *os.File, offset int64, count uint32, de
 }
 
 func (fs *FileStore[T]) writeBytes(file *os.File, items []T, offset int64) {
-	_, _ = file.Seek(offset, 0)
+	if newOffset, seekErr := file.Seek(offset, 0); newOffset != offset || seekErr != nil {
+		panic(fmt.Errorf("seek failed: requested offset %d, got %d, (error %s)", offset, newOffset, seekErr.Error()))
+	}
 	for _, item := range items {
 		fs.adapter.FillBuffer(&item)
-		_, _ = file.Write(fs.adapter.Buffer())
+		if _, writeErr := file.Write(fs.adapter.Buffer()); writeErr != nil {
+			panic(fmt.Errorf("write error: %s", writeErr.Error()))
+		}
 	}
 }
 
